@@ -10,6 +10,7 @@
 #include <fstream>
 #include<cmath>
 #include<map>
+#include<vector>
 #include<utility>
 
 using namespace std;
@@ -220,7 +221,7 @@ int get_Imm(int number, int now){
 	int len = strlen(code);
 	while (!visible(code[now])) now++;
 	int tmp = 1;
-	if (code[now] == '-') tmp = -1;
+	if (code[now] == '-') {tmp = -1; now++;}
 	int res = 0;
 	while (visible(code[now]) && code[now] != ',' && now < len) res = res * 10 + (code[now++] - '0');
 	if (code[now] == ',') now++;
@@ -248,10 +249,10 @@ int get_address(int number, int now){
 		InstructionLine[number].lable = str;
 	}
 	else{
-		int tmp = 1;
-		if (str[0] == '-') tmp = -1;
+		int tmp = 1, st = 0;
+		if (str[0] == '-') {tmp = -1; st = 1;}
 		InstructionLine[number].Offset = 0;
-		for (int i = 0; i < x - 1; ++i)
+		for (int i = st; i < x - 1; ++i)
 			InstructionLine[number].Offset = InstructionLine[number].Offset * 10 + str[i] - '0';
 		InstructionLine[number].Offset *= tmp;
 		string s1 = "";
@@ -305,7 +306,7 @@ void read(const char *name){
 				while (!visible(code[now])) now++;
 				while (now < len && code[now] != ',' && code[now] != ' ' && visible(code[now])) n = n * 10 + (code[now++] - '0');
 				n = 1 << n;
-				n = n - (NewAddress % n);
+				n = n - ((NewAddress - 1) % n);
 				for (int i = 1; i <= n; ++i) store_to_memory(0, 1);
 			}else if (inst == "ascii"){
 				while (!visible(code[now])) now++;
@@ -391,6 +392,7 @@ void read(const char *name){
 						InstructionLine[number].Rdest = InstructionLine[number].Rsrc1;
 						InstructionLine[number].Rsrc1 = InstructionLine[number].Rsrc2;
 						while (!visible(code[now])) now++;
+						InstructionLine[number].Rsrc2 = -1;
 						now = get_Src2(number, now);
 					}
 					if (inst == "divu") InstructionLine[number].unsign = true;

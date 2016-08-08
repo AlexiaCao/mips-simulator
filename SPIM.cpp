@@ -14,25 +14,35 @@ typedef unsigned char byte;
 
 using namespace std;
 
+bool used[100];
+
 int main(int argc, char *argv[]){
-	//freopen("Code.txt", "w", stdout);
 	//fin.open(argv[1]);
 	Prepare_Register();
 	Prepare_Instruction();
-	//read(argv[1]);
 	Registers[29] = Registers[30] = 299999;
 	InstructionLine.push_back(Instruct(0));
-	read("array_test1-mahaojun.s");
-	
+	read(argv[1]);
 /*	for (int i = 0; i < LabelArray[0].size(); ++i){
 		cout << LabelArray[0][i] << " " << TextLabel[LabelArray[0][i]] << endl;
+	}*/
+	/*for (int i = 0; i < LabelArray[1].size(); ++i){
+		cerr << LabelArray[1][i] << " " << DataLabel[LabelArray[1][i]] << endl;
 	}
-	for (int i = 0; i < LabelArray[1].size(); ++i){
-		cout << LabelArray[1][i] << " " << DataLabel[LabelArray[1][i]] << endl;
+	printf("\n");
+	for (int i = 1; i <= NewAddress; ++i){
+		printf("%d\n", Memory[i]);
 	}
-	printf("\n");*/
+	for (int i = 1; i <= NewAddress; ++i){
+		printf("%c\n", Memory[i]);
+	}*/
 	int n = InstructionLine.size();
-	/*for (int i = 1; i < n; ++i){
+/*	memset(used, false, sizeof(used));
+	for (int i = 1; i <= n; ++i)
+		used[InstructionLine[i].Kind] = true;
+	for (int i = 1; i <= 59; ++i)
+		if (used[i] == true) printf("%d\n", i);*/
+/*	for (int i = 1; i < n; ++i){
 		printf("Line:%d ", i);
 		printf("Kind:%d ", InstructionLine[i].Kind);
 		printf("Rdest:%d ", InstructionLine[i].Rdest);

@@ -29,7 +29,6 @@ void ADD(int now, int level){
 	a = b + c;
 	Registers[InstructionLine[now].Rdest] = a;
 }
-
 void AND(int now, int level){
 	int a, b, c;
 	b = Registers[InstructionLine[now].Rsrc1];
@@ -40,15 +39,19 @@ void AND(int now, int level){
 }
 
 void DIV(int now, int level){
-	int a, b;
-	a = Registers[InstructionLine[now].Rsrc1];
-	b = Registers[InstructionLine[now].Rsrc2];
-	if (b == 0) throw("Error!");
 	if (InstructionLine[now].unsign){
-		Registers[32] = (unsigned int)a / (unsigned int)b;
-		Registers[33] = (unsigned int)a % (unsigned int)b;
+		unsigned int a = (unsigned int)Registers[InstructionLine[now].Rsrc1];
+		unsigned int b;
+		if (InstructionLine[now].Rsrc2 == -1) b = (unsigned int)InstructionLine[now].Number;
+		else b = (unsigned int)Registers[InstructionLine[now].Rsrc2];	
+		Registers[32] = a / b;
+		Registers[33] = a % b;
 	}
 	else{
+		int a = Registers[InstructionLine[now].Rsrc1];
+		int b;
+		if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+		else b = Registers[InstructionLine[now].Rsrc2];
 		Registers[32] = a / b;
 		Registers[33] = a % b;
 	}
@@ -56,17 +59,26 @@ void DIV(int now, int level){
 }
 
 void MUL(int now, int level){
-	int b, c;
-	long long a;
-	b = Registers[InstructionLine[now].Rsrc1];
-	if (InstructionLine[now].Rsrc2 == -1) c = InstructionLine[now].Number;
-	else c = Registers[InstructionLine[now].Rsrc2];
-	if (InstructionLine[now].unsign) a = (unsigned int)b * (unsigned int)c; 
-	else a = b * c; 
-	printf("%d * %d\n", b, c);
-	Registers[32] = a & 0xffffffff;
-	Registers[33] = a >> 32;
-	if (InstructionLine[now].Rdest != -1) Registers[InstructionLine[now].Rdest] = Registers[32];
+	if (InstructionLine[now].unsign){
+		unsigned int b = (unsigned int)Registers[InstructionLine[now].Rsrc1], c;
+		if (InstructionLine[now].Rsrc2 == -1) c = (unsigned int)InstructionLine[now].Number;
+		else c = (unsigned int)Registers[InstructionLine[now].Rsrc2];		
+		unsigned long long a = (unsigned long long)b * c;
+		Registers[32] = ((unsigned int)(a >> 32));
+		Registers[33] = (unsigned int)(a - ((a >> 32) << 32));
+		unsigned int tmp = (unsigned int)a;
+		if (InstructionLine[now].Rdest != -1) Registers[InstructionLine[now].Rdest] = tmp;
+	}
+	else{
+		int b = Registers[InstructionLine[now].Rsrc1], c;
+		if (InstructionLine[now].Rsrc2 == -1) c = InstructionLine[now].Number;
+		else c = Registers[InstructionLine[now].Rsrc2];
+		long long a = (long long)b * c;
+		Registers[32] = (int)(((unsigned long long)a) >> 32);
+		Registers[33] = (int)(a - ((((unsigned long long)a) >> 32) << 32));
+		int tmp = (int)a;
+		if (InstructionLine[now].Rdest != -1) Registers[InstructionLine[now].Rdest] = tmp;
+	}
 }
 
 void NEG(int now, int level){
@@ -98,13 +110,18 @@ void OR(int now, int level){
 	Registers[InstructionLine[now].Rdest] = a;
 }
 void REM(int now, int level){
-	int a, b, c;
-	b = Registers[InstructionLine[now].Rsrc1];
-	if (InstructionLine[now].Rsrc2 == -1) c = InstructionLine[now].Number;
-	else c = Registers[InstructionLine[now].Rsrc2];
-	if (InstructionLine[now].unsign) a = ((unsigned int)b % (unsigned int)c);
-	else a = b % c;
-	Registers[InstructionLine[now].Rdest] = a;
+	if (InstructionLine[now].unsign){
+		unsigned int a = (unsigned int)Registers[InstructionLine[now].Rsrc1], b;
+		if (InstructionLine[now].Rsrc2 == -1) b = (unsigned int)InstructionLine[now].Number;
+		else b = (unsigned int)Registers[InstructionLine[now].Rsrc2];
+		Registers[InstructionLine[now].Rdest] = (int)((unsigned int)(a % b));
+	}
+	else{
+		int a = Registers[InstructionLine[now].Rsrc1], b;
+		if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+		else b = Registers[InstructionLine[now].Rsrc2];
+		Registers[InstructionLine[now].Rdest] = a % b;
+	}
 }
 void ROL(int now, int level){
 	int a, b, c;
@@ -224,8 +241,10 @@ void B(int now, int level){
 	PresentLine = TextLabel[InstructionLine[now].lable];
 }
 void BEQ(int now, int level){
-	int a = Registers[InstructionLine[now].Rsrc1];
-	int b = Registers[InstructionLine[now].Rsrc2];
+	int a, b;
+	a = Registers[InstructionLine[now].Rsrc1];
+	if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+	else b = Registers[InstructionLine[now].Rsrc2];
 	if (a == b) PresentLine = TextLabel[InstructionLine[now].lable];
 }
 void BEQZ(int now, int level){
@@ -233,10 +252,10 @@ void BEQZ(int now, int level){
 	if (a == 0) PresentLine = TextLabel[InstructionLine[now].lable];
 }
 void BGE(int now, int level){
-	int a = Registers[InstructionLine[now].Rsrc1];
-	int b = Registers[InstructionLine[now].Rsrc2];
-	cerr << "$" << InstructionLine[now].Rsrc1 << " = "  << a << " ";
-	cerr << "$" << InstructionLine[now].Rsrc2 << " = "  << b << endl;
+	int a, b;
+	a = Registers[InstructionLine[now].Rsrc1];
+	if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+	else b = Registers[InstructionLine[now].Rsrc2];
 	if (InstructionLine[now].unsign){
 		if ((unsigned int)a >= (unsigned int)b) PresentLine = TextLabel[InstructionLine[now].lable];
 	}
@@ -249,13 +268,15 @@ void BGEZ(int now, int level){
 void BGEZAL(int now, int level){
 	int a = Registers[InstructionLine[now].Rsrc1];
 	if (a >= 0){
-		Registers[31] = now + 1; 
+		Registers[31] = now + 1;
 		PresentLine = TextLabel[InstructionLine[now].lable];
 	}
 }
 void BGT(int now, int level){
-	int a = Registers[InstructionLine[now].Rsrc1];
-	int b = Registers[InstructionLine[now].Rsrc2];
+	int a, b;
+	a = Registers[InstructionLine[now].Rsrc1];
+	if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+	else b = Registers[InstructionLine[now].Rsrc2];
 	if (InstructionLine[now].unsign){
 		if ((unsigned int)a > (unsigned int)b) PresentLine = TextLabel[InstructionLine[now].lable];
 	}
@@ -266,8 +287,10 @@ void BGTZ(int now, int level){
 	if (a > 0)	PresentLine = TextLabel[InstructionLine[now].lable];
 }
 void BLE(int now, int level){
-	int a = Registers[InstructionLine[now].Rsrc1];
-	int b = Registers[InstructionLine[now].Rsrc2];
+	int a, b;
+	a = Registers[InstructionLine[now].Rsrc1];
+	if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+	else b = Registers[InstructionLine[now].Rsrc2];
 	if (InstructionLine[now].unsign){
 		if ((unsigned int)a <= (unsigned int)b) PresentLine = TextLabel[InstructionLine[now].lable];
 	}
@@ -292,8 +315,10 @@ void BLTZAL(int now, int level){
 	}
 }
 void BLT(int now, int level){
-	int a = Registers[InstructionLine[now].Rsrc1];
-	int b = Registers[InstructionLine[now].Rsrc2];
+	int a, b;
+	a = Registers[InstructionLine[now].Rsrc1];
+	if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+	else b = Registers[InstructionLine[now].Rsrc2];
 	if (InstructionLine[now].unsign){
 		if ((unsigned int)a < (unsigned int)b) PresentLine = TextLabel[InstructionLine[now].lable];
 	}
@@ -304,8 +329,10 @@ void BLTZ(int now, int level){
 	if (a < 0)	PresentLine = TextLabel[InstructionLine[now].lable];
 }
 void BNE(int now, int level){
-	int a = Registers[InstructionLine[now].Rsrc1];
-	int b = Registers[InstructionLine[now].Rsrc2];
+	int a, b;
+	a = Registers[InstructionLine[now].Rsrc1];
+	if (InstructionLine[now].Rsrc2 == -1) b = InstructionLine[now].Number;
+	else b = Registers[InstructionLine[now].Rsrc2];
 	if (a != b) PresentLine = TextLabel[InstructionLine[now].lable];
 }
 void BNEZ(int now, int level){
@@ -338,18 +365,18 @@ void LB(int now, int level){
 	int address;
 	if (InstructionLine[now].Rsrc1 == -1) address = DataLabel[InstructionLine[now].lable];
 	else address = Registers[InstructionLine[now].Rsrc1] + InstructionLine[now].Offset;
-	if (InstructionLine[now].unsign) Registers[InstructionLine[now].Rdest] = (unsigned int)Memory[address];
-	else Registers[InstructionLine[now].Rdest] = Memory[address];
+	int a = Memory[address];
+	if (InstructionLine[now].unsign) Registers[InstructionLine[now].Rdest] = ((a >> 7) ? -1 : 1) * (a & ((1 << 7) - 1));
+	else Registers[InstructionLine[now].Rdest] = a;
 }
 void LD(int now, int level){
 	int address;
 	if (InstructionLine[now].Rsrc1 == -1) address = DataLabel[InstructionLine[now].lable];
 	else address = Registers[InstructionLine[now].Rsrc1] + InstructionLine[now].Offset;
-	int a = 0, b = 0, i;
-	for (i = 0; i < 4; ++i)	a = (a << 8) | Memory[address + i];
-	Registers[InstructionLine[now].Rdest] = a;
-	for (i = 4; i < 8; ++i) b = (b << 8) | Memory[address + i];
-	Registers[InstructionLine[now].Rdest + 1] = b;
+	unsigned long long a = 0llu;
+	for (int i = 0; i < 8; ++i) a = (a << 8) + Memory[address + i];
+	Registers[InstructionLine[now].Rdest] = (int)((unsigned long long)(a >> 32));
+	Registers[InstructionLine[now].Rdest + 1] = (int)((unsigned long long)(a - ((a >> 32) << 32)));
 }
 void LH(int now, int level){
 	int address;
@@ -365,44 +392,42 @@ void LW(int now, int level){
 	else address = Registers[InstructionLine[now].Rsrc1] + InstructionLine[now].Offset;
 	int a = 0, i;
 	for (i = 0; i < 4; ++i)	a = (a << 8) | Memory[address + i];
-	Registers[InstructionLine[now].Rdest] = a;
+	Registers[InstructionLine[now].Rdest] = (unsigned int)a;
 }
 void SB(int now, int level){
 	int address;
 	if (InstructionLine[now].Rsrc1 == -1) address = DataLabel[InstructionLine[now].lable];
 	else address = Registers[InstructionLine[now].Rsrc1] + InstructionLine[now].Offset;
-	Memory[address] = Registers[InstructionLine[now].Rsrc2] & 0x00ff;
+	unsigned int a = Registers[InstructionLine[now].Rsrc2];
+	Memory[address] = (unsigned char)a;
 }
 void SD(int now, int level){
 	int address, i;
 	if (InstructionLine[now].Rsrc1 == -1) address = DataLabel[InstructionLine[now].lable];
 	else address = Registers[InstructionLine[now].Rsrc1] + InstructionLine[now].Offset;
-	int a = Registers[InstructionLine[now].Rsrc2];
-	for (i = 3; i >= 0; --i) {
-		Memory[address + i] = a & 0x00ff;
-		a >>= 8;
-	}
-	a = Registers[InstructionLine[now].Rsrc2 + 1];
-	for (i = 7; i >= 4; --i) {
-		Memory[address + i] = a & 0x00ff;
-		a >>= 8;
+	unsigned int a = Registers[InstructionLine[now].Rsrc2];
+	unsigned int b = Registers[InstructionLine[now].Rsrc2 + 1];
+	unsigned long long c = (unsigned long long)((unsigned long long)a << 32) + b;
+	for (int i = 7; i >= 0; --i) {
+		Memory[address + i] = (unsigned char)(c - ((c >> 8) << 8));
+		c >>= 8;
 	}
 }
 void SH(int now, int level){
 	int address;
 	if (InstructionLine[now].Rsrc1 == -1) address = DataLabel[InstructionLine[now].lable];
 	else address = Registers[InstructionLine[now].Rsrc1] + InstructionLine[now].Offset;
-	int a = Registers[InstructionLine[now].Rsrc2] & 0xffff;
-	Memory[address + 1] = a & 0x00ff;
-	Memory[address] = a >> 8;
+	unsigned int a = Registers[InstructionLine[now].Rsrc2];
+	Memory[address + 1] = (unsigned char)(a >> 8);
+	Memory[address] = (unsigned char)(a - ((a >> 8) << 8));
 }
 void SW(int now, int level){
 	int address, i;
 	if (InstructionLine[now].Rsrc1 == -1) address = DataLabel[InstructionLine[now].lable];
 	else address = Registers[InstructionLine[now].Rsrc1] + InstructionLine[now].Offset;
-	int a = Registers[InstructionLine[now].Rsrc2];
-	for (i = 3; i >= 0; --i) {
-		Memory[address + i] = a & 0x00ff;
+	unsigned int a = Registers[InstructionLine[now].Rsrc2];
+	for (int i = 3; i >= 0; --i) {
+		Memory[address + i] = (unsigned char)(a - ((a >> 8) << 8));
 		a >>= 8;
 	}
 }
@@ -411,10 +436,10 @@ void MOVE(int now, int level){
 	Registers[InstructionLine[now].Rdest] = a;
 }
 void MFHI(int now, int level){
-	Registers[InstructionLine[now].Rdest] = Registers[32];
+	Registers[InstructionLine[now].Rdest] = Registers[33];
 }
 void MFLO(int now, int level){
-	Registers[InstructionLine[now].Rdest] = Registers[33];
+	Registers[InstructionLine[now].Rdest] = Registers[32];
 }
 void NOP(int now, int level){
 }
@@ -443,7 +468,7 @@ void SYSCALL(int now, int level){
 		}
 		case 9:{
 			int len = Registers[4];
-			while (NewAddress % 4 != 0) NewAddress++;
+			while ((NewAddress - 1) % 4 != 0) NewAddress++;
 			Registers[2] = NewAddress;
 			for (int i = 0; i < len; ++i) Memory[NewAddress++] = 0;
 			break;
@@ -466,15 +491,15 @@ void (*func[59])(int, int) = {NULL, ABS, ADD, AND, DIV, MUL, NEG, NOR, NOT, OR,
 void work(int StartLine, int SumLine){
 	PresentLine = StartLine;
 	while (PresentLine < SumLine && PresentLine){
-		printf("Now: %d\n", PresentLine);
+		/*printf("Now: %d\n", PresentLine);
 		for (int i = 0; i <= 33; ++i){
 			if (i && i % 5 == 0) printf("\n");
 			printf("$%2d = %6d ", i, Registers[i]);
 		}
-		printf("\n");
+		printf("\n");*/
 		//cerr << "Now:" << PresentLine << " ";
 		//cerr << "Kind:" << InstructionLine[PresentLine].Kind << endl;
-		//cerr << "$ra = " << Registers[31] << endl;
+		//cerr << "$ra = " << Registers[31] << endl;*/
 		int tmp = PresentLine;
 		func[InstructionLine[PresentLine].Kind](PresentLine, 1);
 		if (PresentLine == tmp) PresentLine++;
